@@ -4,32 +4,34 @@
   <meta charset="UTF-8">
   <title>メンテナンス管理</title>
 
-<style>
+  <style>
   body {
     font-family: sans-serif;
     margin: 0;
     padding: 20px;
     display: flex;
     justify-content: center;
+    background-color: #f9f9f9;
   }
 
   .container {
     width: 100%;
-    max-width: 600px;  /* PCでは600pxまで、スマホでは画面幅にフィット */
+    max-width: 600px;
   }
 
   h1 {
     text-align: center;
-    font-size: 1.8em;
-    margin-bottom: 20px;
+    font-size: 2em;
+    margin-bottom: 24px;
   }
 
   .task-card {
+    background-color: #fff;
     border: 1px solid #ccc;
-    border-radius: 12px;
-    padding: 16px;
-    margin: 12px 0;
-    box-shadow: 2px 2px 6px rgba(0,0,0,0.1);
+    border-radius: 14px;
+    padding: 20px;
+    margin: 16px 0;
+    box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -37,20 +39,28 @@
 
   .task-title {
     font-weight: bold;
-    font-size: 1.3em;
-    margin-bottom: 12px;
+    font-size: 1.5em;
+    margin-bottom: 16px;
     text-align: center;
   }
 
+  .button-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
   button {
-    padding: 10px 18px;
-    margin: 6px;
-    border-radius: 10px;
+    padding: 14px 24px;
+    border-radius: 12px;
     border: none;
     background: #4CAF50;
     color: white;
-    font-size: 1em;
+    font-size: 1.1em;
     cursor: pointer;
+    transition: background 0.2s;
   }
 
   button:hover {
@@ -58,28 +68,23 @@
   }
 
   .next-date {
-    margin-top: 10px;
+    margin-top: 12px;
     color: #555;
-    font-size: 1em;
+    font-size: 1.1em;
     text-align: center;
   }
 
-  /* 履歴ボタンと使用ボタンを横並びにしたい場合 */
-  .button-group {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 8px;
-  }
-
+  /* 小型スマホ用 */
   @media (max-width: 400px) {
     .task-title {
-      font-size: 1.1em;
+      font-size: 1.3em;
     }
     button {
-      padding: 8px 14px;
-      font-size: 0.95em;
+      padding: 12px 20px;
+      font-size: 1em;
+    }
+    .next-date {
+      font-size: 1em;
     }
   }
 </style>
@@ -88,9 +93,6 @@
   <h1>メンテナンス管理</h1>
   <div id="maintenance-list"></div>
 </div>
-
-
-
   
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -157,5 +159,6 @@
   </script>
 </body>
 </html>
+
 
 
