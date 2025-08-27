@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>メンテナンス管理</title>
+<title>洗濯機・風呂メンテナンス</title>
 <style>
   body {
     font-family: sans-serif;
@@ -85,7 +85,7 @@
 </head>
 <body>
 <div class="container">
-  <h1>メンテナンス管理</h1>
+  <h1>洗濯機・風呂メンテナンス</h1>
   <div id="maintenance-list"></div>
 </div>
 
@@ -158,7 +158,7 @@ async function fetchTasks() {
     buttons.className = 'button-group';
 
     const useBtn = document.createElement('button');
-    useBtn.textContent = '実施';
+    useBtn.textContent = '実施した';
     useBtn.onclick = async () => {
       const { error: insertError } = await supabase
         .from('maintenance_history')
@@ -207,3 +207,4 @@ fetchTasks();
 </script>
 </body>
 </html>
+
