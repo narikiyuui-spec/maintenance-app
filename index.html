@@ -44,13 +44,16 @@
     text-align: center;
   }
 
-  .button-group {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
+.button-group {
+  display: flex;           /* 横並びにする */
+  flex-direction: row;     /* 念のため */
+  justify-content: center; /* 中央揃え */
+  align-items: center;     /* 高さ揃え */
+  flex-wrap: wrap;         /* 幅が足りなければ折り返す */
+  gap: 12px;               /* ボタン間のスペース */
+  margin-bottom: 12px;
+}
+
 
   button {
     padding: 14px 24px;
@@ -169,3 +172,4 @@ fetchTasks();
 </script>
 </body>
 </html>
+
