@@ -44,16 +44,15 @@
     text-align: center;
   }
 
-.button-group {
-  display: flex;           /* 横並びにする */
-  flex-direction: row;     /* 念のため */
-  justify-content: center; /* 中央揃え */
-  align-items: center;     /* 高さ揃え */
-  flex-wrap: wrap;         /* 幅が足りなければ折り返す */
-  gap: 12px;               /* ボタン間のスペース */
-  margin-bottom: 12px;
-}
-
+  .button-group {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
 
   button {
     padding: 14px 24px;
@@ -99,7 +98,16 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// 期限を自動計算する関数（task_typeによって期間を変える）
+// 日付を「2025年8月27日」形式に変換
+function formatDateJP(dateString) {
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `${year}年${month}月${day}日`;
+}
+
+// 期限を自動計算する関数
 function calculateNextDate(lastDone, task_type) {
   const date = new Date(lastDone);
   switch(task_type) {
@@ -150,7 +158,7 @@ async function fetchTasks() {
     const historyBtn = document.createElement('button');
     historyBtn.textContent = '履歴';
     historyBtn.onclick = () => {
-      alert(`直近の日時: ${task.last_done ? task.last_done : 'なし'}`);
+      alert(`直近の日時: ${task.last_done ? formatDateJP(task.last_done) : 'なし'}`);
     }
 
     buttons.appendChild(useBtn);
@@ -158,7 +166,7 @@ async function fetchTasks() {
 
     const nextDateDiv = document.createElement('div');
     nextDateDiv.className = 'next-date';
-    nextDateDiv.textContent = '次回: ' + (task.last_done ? calculateNextDate(task.last_done, task.task_type) : '未設定');
+    nextDateDiv.textContent = '次回: ' + (task.last_done ? formatDateJP(calculateNextDate(task.last_done, task.task_type)) : '未設定');
 
     card.appendChild(title);
     card.appendChild(buttons);
@@ -172,4 +180,3 @@ fetchTasks();
 </script>
 </body>
 </html>
-
