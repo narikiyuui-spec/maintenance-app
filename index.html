@@ -107,9 +107,9 @@ function formatDateJP(dateString) {
   return `${year}年${month}月${day}日`;
 }
 
-// 次回日を自動計算（last_done が null の場合は今日から計算）
-function calculateNextDate(lastDone, task_type) {
-  let date = lastDone ? new Date(lastDone) : new Date();
+// 次回日を自動計算（履歴最新日時を基準）
+function calculateNextDate(latestDone, task_type) {
+  let date = latestDone ? new Date(latestDone) : new Date();
 
   if (task_type.includes('2ヶ月')) date.setMonth(date.getMonth() + 2);
   else if (task_type.includes('3ヶ月')) date.setMonth(date.getMonth() + 3);
@@ -124,20 +124,30 @@ function calculateNextDate(lastDone, task_type) {
 
 // タスク取得・表示
 async function fetchTasks() {
-  const { data, error } = await supabase
+  const { data: tasks, error: tasksError } = await supabase
     .from('maintenance_tasks')
     .select('*')
-    .order('id', {ascending: true});
+    .order('id', { ascending: true });
 
-  if (error) {
-    console.error(error);
+  if (tasksError) {
+    console.error(tasksError);
     return;
   }
 
   const container = document.getElementById('maintenance-list');
   container.innerHTML = '';
 
-  data.forEach(task => {
+  for (const task of tasks) {
+    // 履歴の最新日時取得
+    const { data: historyData } = await supabase
+      .from('maintenance_history')
+      .select('done_at')
+      .eq('task_id', task.id)
+      .order('done_at', { ascending: false })
+      .limit(1);
+
+    const latestDone = historyData && historyData.length > 0 ? historyData[0].done_at : null;
+
     const card = document.createElement('div');
     card.className = 'task-card';
 
@@ -151,7 +161,6 @@ async function fetchTasks() {
     const useBtn = document.createElement('button');
     useBtn.textContent = '使用した';
     useBtn.onclick = async () => {
-      // 1) 履歴に追加
       const { error: insertError } = await supabase
         .from('maintenance_history')
         .insert({ task_id: task.id, done_at: new Date() });
@@ -161,57 +170,41 @@ async function fetchTasks() {
         return;
       }
 
-      // 2) last_done を更新
-      const { error: updateError } = await supabase
-        .from('maintenance_tasks')
-        .update({ last_done: new Date() })
-        .eq('id', task.id);
-
-      if (updateError) {
-        console.error(updateError);
-        return;
-      }
-
-      // 再表示
+      // 再取得して次回日を更新
       fetchTasks();
-    }
+    };
 
     const historyBtn = document.createElement('button');
     historyBtn.textContent = '履歴';
     historyBtn.onclick = async () => {
-      const { data: historyData, error: historyError } = await supabase
+      const { data: hist, error: histError } = await supabase
         .from('maintenance_history')
         .select('*')
         .eq('task_id', task.id)
-        .order('done_at', {ascending: false})
+        .order('done_at', { ascending: false })
         .limit(10);
 
-      if (historyError) {
-        console.error(historyError);
-        return;
-      }
-
-      const formatted = historyData.map(h => formatDateJP(h.done_at)).join('\n');
+      if (histError) { console.error(histError); return; }
+      const formatted = hist.map(h => formatDateJP(h.done_at)).join('\n');
       alert(formatted || '履歴なし');
-    }
+    };
 
     buttons.appendChild(useBtn);
     buttons.appendChild(historyBtn);
 
     const nextDateDiv = document.createElement('div');
     nextDateDiv.className = 'next-date';
-    nextDateDiv.textContent = '次回: ' + calculateNextDate(task.last_done, task.task_type);
+    nextDateDiv.textContent = '次回: ' + calculateNextDate(latestDone, task.task_type);
 
     card.appendChild(title);
     card.appendChild(buttons);
     card.appendChild(nextDateDiv);
 
     container.appendChild(card);
-  });
+  }
 }
 
 fetchTasks();
 </script>
 </body>
 </html>
-
