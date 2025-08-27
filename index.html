@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>洗濯機・お風呂管理</title>
+<title>メンテナンス管理</title>
 <style>
   body {
     font-family: sans-serif;
@@ -85,7 +85,7 @@
 </head>
 <body>
 <div class="container">
-  <h1>洗濯機・お風呂管理</h1>
+  <h1>メンテナンス管理</h1>
   <div id="maintenance-list"></div>
 </div>
 
@@ -95,7 +95,6 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 // --- Supabase URL と ANON KEY を設定 ---
 const SUPABASE_URL = 'https://cyyavrlclxparfkcwmkg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5eWF2cmxjbHhwYXJma2N3bWtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDg2MDQsImV4cCI6MjA3MTc4NDYwNH0.oUCzHzhUWYPju65rtGJEdgXHIHkac42tREPCXGGx3rU';
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 日付を「2025年8月27日」形式に変換
@@ -159,7 +158,7 @@ async function fetchTasks() {
     buttons.className = 'button-group';
 
     const useBtn = document.createElement('button');
-    useBtn.textContent = '実施した';
+    useBtn.textContent = '実施';
     useBtn.onclick = async () => {
       const { error: insertError } = await supabase
         .from('maintenance_history')
@@ -170,8 +169,8 @@ async function fetchTasks() {
         return;
       }
 
-      // 再取得して次回日を更新
-      fetchTasks();
+      // 押したカードだけ更新
+      nextDateDiv.textContent = '次回: ' + calculateNextDate(new Date().toISOString(), task.task_type);
     };
 
     const historyBtn = document.createElement('button');
@@ -208,5 +207,3 @@ fetchTasks();
 </script>
 </body>
 </html>
-
-
