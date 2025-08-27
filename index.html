@@ -47,7 +47,6 @@ button {
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// ここにあなたのSupabase情報を入力
 const SUPABASE_URL = 'YOUR_SUPABASE_URL';
 const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -95,6 +94,7 @@ async function fetchTasks() {
     historyBtn.addEventListener('click', () => {
       historyList.style.display = historyList.style.display === 'none' ? 'block' : 'none';
       if (historyList.style.display === 'block') {
+        // 簡易で直近10件を表示
         supabase.from('tasks').select('last_done').eq('id', task.id).order('last_done', {ascending:false}).limit(10)
           .then(({data})=>{
             historyList.innerHTML = data.map(d=>`<li>${new Date(d.last_done).toLocaleDateString()}</li>`).join('');
@@ -114,3 +114,4 @@ fetchTasks();
 </div>
 </body>
 </html>
+
