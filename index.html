@@ -93,8 +93,8 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
 // --- Supabase URL と ANON KEY を設定 ---
-const SUPABASE_URL = 'https://cyyavrlclxparfkcwmkg.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5eWF2cmxjbHhwYXJma2N3bWtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDg2MDQsImV4cCI6MjA3MTc4NDYwNH0.oUCzHzhUWYPju65rtGJEdgXHIHkac42tREPCXGGx3rU';
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -109,19 +109,12 @@ function formatDateJP(dateString) {
 
 // 次回日を自動計算（last_done が null の場合は今日から計算）
 function calculateNextDate(lastDone, task_type) {
-  let date;
-  if (!lastDone) {
-    date = new Date();
-  } else {
-    date = new Date(lastDone);
-  }
+  let date = lastDone ? new Date(lastDone) : new Date();
 
-  switch(task_type) {
-    case '2ヶ月': date.setMonth(date.getMonth()+2); break;
-    case '3ヶ月': date.setMonth(date.getMonth()+3); break;
-    case '2週間': date.setDate(date.getDate()+14); break;
-    default: date.setMonth(date.getMonth()+1);
-  }
+  if (task_type.includes('2ヶ月')) date.setMonth(date.getMonth() + 2);
+  else if (task_type.includes('3ヶ月')) date.setMonth(date.getMonth() + 3);
+  else if (task_type.includes('2週間')) date.setDate(date.getDate() + 14);
+  else date.setMonth(date.getMonth() + 1); // デフォルト1ヶ月
 
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
