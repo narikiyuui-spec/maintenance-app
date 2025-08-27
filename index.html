@@ -159,7 +159,7 @@ async function fetchTasks() {
     buttons.className = 'button-group';
 
     const useBtn = document.createElement('button');
-    useBtn.textContent = '使用した';
+    useBtn.textContent = '実施した';
     useBtn.onclick = async () => {
       const { error: insertError } = await supabase
         .from('maintenance_history')
@@ -208,4 +208,5 @@ fetchTasks();
 </script>
 </body>
 </html>
+
 
