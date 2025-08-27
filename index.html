@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>メンテナンス管理</title>
-
-  <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>メンテナンス管理</title>
+<style>
   body {
     font-family: sans-serif;
     margin: 0;
@@ -16,7 +16,7 @@
 
   .container {
     width: 100%;
-    max-width: 800px;
+    max-width: 600px;
   }
 
   h1 {
@@ -58,7 +58,7 @@
     border: none;
     background: #4CAF50;
     color: white;
-    font-size: 1.5em;
+    font-size: 1.1em;
     cursor: pointer;
     transition: background 0.2s;
   }
@@ -74,79 +74,98 @@
     text-align: center;
   }
 
+  @media (max-width: 400px) {
+    .task-title { font-size: 1.3em; }
+    button { padding: 12px 20px; font-size: 1em; }
+    .next-date { font-size: 1em; }
+  }
 </style>
-
+</head>
+<body>
 <div class="container">
   <h1>メンテナンス管理</h1>
   <div id="maintenance-list"></div>
 </div>
-  
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    // ここに自分のSupabase情報を設定
-    const SUPABASE_URL = 'https://cyyavrlclxparfkcwmkg.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5eWF2cmxjbHhwYXJma2N3bWtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDg2MDQsImV4cCI6MjA3MTc4NDYwNH0.oUCzHzhUWYPju65rtGJEdgXHIHkac42tREPCXGGx3rU';
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-    // 各タスクの間隔（日数）
-    const taskIntervals = {
-      "風呂カビ防止剤": 60,
-      "洗濯機15分メンテ": 14,
-      "洗濯機4時間メンテ": 90,
-      "洗剤自動投入メンテ": 90
-    };
+// --- ここにご自身の Supabase URL と ANON KEY を入れてください ---
+const SUPABASE_URL = 'https://cyyavrlclxparfkcwmkg.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5eWF2cmxjbHhwYXJma2N3bWtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDg2MDQsImV4cCI6MjA3MTc4NDYwNH0.oUCzHzhUWYPju65rtGJEdgXHIHkac42tREPCXGGx3rU';
 
-    async function fetchTasks() {
-      const container = document.getElementById('maintenance-list');
-      container.innerHTML = '';
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-      const { data, error } = await supabase
+// 期限を自動計算する関数（task_typeによって期間を変える）
+function calculateNextDate(lastDone, task_type) {
+  const date = new Date(lastDone);
+  switch(task_type) {
+    case '2ヶ月': date.setMonth(date.getMonth()+2); break;
+    case '3ヶ月': date.setMonth(date.getMonth()+3); break;
+    case '2週間': date.setDate(date.getDate()+14); break;
+    default: date.setMonth(date.getMonth()+1);
+  }
+  return date.toISOString().split('T')[0];
+}
+
+// タスクを取得して表示
+async function fetchTasks() {
+  const { data, error } = await supabase
+    .from('maintenance_tasks')
+    .select('*')
+    .order('id', {ascending: true});
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const container = document.getElementById('maintenance-list');
+  container.innerHTML = '';
+
+  data.forEach(task => {
+    const card = document.createElement('div');
+    card.className = 'task-card';
+
+    const title = document.createElement('div');
+    title.className = 'task-title';
+    title.textContent = task.task_name;
+
+    const buttons = document.createElement('div');
+    buttons.className = 'button-group';
+
+    const useBtn = document.createElement('button');
+    useBtn.textContent = '使用した';
+    useBtn.onclick = async () => {
+      const { error: updateError } = await supabase
         .from('maintenance_tasks')
-        .select('*');
-
-      if (error) {
-        console.error('Supabase fetch error:', error);
-        return;
-      }
-
-      data.forEach(task => {
-        const card = document.createElement('div');
-        card.className = 'task-card';
-
-        const nextDate = new Date(task.last_done);
-        nextDate.setDate(nextDate.getDate() + (taskIntervals[task.task_name] || 30));
-
-        card.innerHTML = `
-          <div class="task-title">${task.task_name}</div>
-          <button class="use-btn">使用した</button>
-          <button class="history-btn">履歴を見る</button>
-          <div class="next-date">次回の目安: ${nextDate.toLocaleDateString()}</div>
-        `;
-
-        // 使用したボタン
-        card.querySelector('.use-btn').addEventListener('click', async () => {
-          await supabase
-            .from('maintenance_tasks')
-            .update({ last_done: new Date().toISOString() })
-            .eq('id', task.id);
-          fetchTasks(); // 更新
-        });
-
-        // 履歴ボタン
-        card.querySelector('.history-btn').addEventListener('click', () => {
-          alert(`最後に使用した日時: ${new Date(task.last_done).toLocaleString()}`);
-        });
-
-        container.appendChild(card);
-      });
+        .update({ last_done: new Date() })
+        .eq('id', task.id);
+      if (!updateError) fetchTasks();
     }
 
-    document.addEventListener('DOMContentLoaded', fetchTasks);
-  </script>
+    const historyBtn = document.createElement('button');
+    historyBtn.textContent = '履歴';
+    historyBtn.onclick = () => {
+      alert(`直近の日時: ${task.last_done ? task.last_done : 'なし'}`);
+    }
+
+    buttons.appendChild(useBtn);
+    buttons.appendChild(historyBtn);
+
+    const nextDateDiv = document.createElement('div');
+    nextDateDiv.className = 'next-date';
+    nextDateDiv.textContent = '次回: ' + (task.last_done ? calculateNextDate(task.last_done, task.task_type) : '未設定');
+
+    card.appendChild(title);
+    card.appendChild(buttons);
+    card.appendChild(nextDateDiv);
+
+    container.appendChild(card);
+  });
+}
+
+fetchTasks();
+</script>
 </body>
 </html>
-
-
-
-
