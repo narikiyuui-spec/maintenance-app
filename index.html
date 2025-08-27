@@ -104,4 +104,92 @@ function formatDateJP(dateString) {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
-  return `${year}年${month
+  return `${year}年${month}月${day}日`;
+}
+
+// 次回日を自動計算
+function calculateNextDate(lastDone, task_type) {
+  const date = new Date(lastDone);
+  switch(task_type) {
+    case '2ヶ月': date.setMonth(date.getMonth()+2); break;
+    case '3ヶ月': date.setMonth(date.getMonth()+3); break;
+    case '2週間': date.setDate(date.getDate()+14); break;
+    default: date.setMonth(date.getMonth()+1);
+  }
+  return date.toISOString().split('T')[0];
+}
+
+// タスク取得・表示
+async function fetchTasks() {
+  const { data, error } = await supabase
+    .from('maintenance_tasks')
+    .select('*')
+    .order('id', {ascending: true});
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const container = document.getElementById('maintenance-list');
+  container.innerHTML = '';
+
+  data.forEach(task => {
+    const card = document.createElement('div');
+    card.className = 'task-card';
+
+    const title = document.createElement('div');
+    title.className = 'task-title';
+    title.textContent = task.task_name;
+
+    const buttons = document.createElement('div');
+    buttons.className = 'button-group';
+
+    const useBtn = document.createElement('button');
+    useBtn.textContent = '使用した';
+    useBtn.onclick = async () => {
+      const { error: insertError } = await supabase
+        .from('maintenance_history')
+        .insert({ task_id: task.id, done_at: new Date() });
+
+      if (!insertError) fetchTasks();
+    }
+
+    const historyBtn = document.createElement('button');
+    historyBtn.textContent = '履歴';
+    historyBtn.onclick = async () => {
+      const { data: historyData, error: historyError } = await supabase
+        .from('maintenance_history')
+        .select('*')
+        .eq('task_id', task.id)
+        .order('done_at', {ascending: false})
+        .limit(10);
+
+      if (historyError) {
+        console.error(historyError);
+        return;
+      }
+
+      const formatted = historyData.map(h => formatDateJP(h.done_at)).join('\n');
+      alert(formatted || '履歴なし');
+    }
+
+    buttons.appendChild(useBtn);
+    buttons.appendChild(historyBtn);
+
+    const nextDateDiv = document.createElement('div');
+    nextDateDiv.className = 'next-date';
+    nextDateDiv.textContent = '次回: ' + (task.last_done ? formatDateJP(calculateNextDate(task.last_done, task.task_type)) : '未設定');
+
+    card.appendChild(title);
+    card.appendChild(buttons);
+    card.appendChild(nextDateDiv);
+
+    container.appendChild(card);
+  });
+}
+
+fetchTasks();
+</script>
+</body>
+</html>
