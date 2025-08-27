@@ -107,16 +107,26 @@ function formatDateJP(dateString) {
   return `${year}年${month}月${day}日`;
 }
 
-// 次回日を自動計算
+// 次回日を自動計算（last_done が null の場合は今日から計算）
 function calculateNextDate(lastDone, task_type) {
-  const date = new Date(lastDone);
+  let date;
+  if (!lastDone) {
+    date = new Date();
+  } else {
+    date = new Date(lastDone);
+  }
+
   switch(task_type) {
     case '2ヶ月': date.setMonth(date.getMonth()+2); break;
     case '3ヶ月': date.setMonth(date.getMonth()+3); break;
     case '2週間': date.setDate(date.getDate()+14); break;
     default: date.setMonth(date.getMonth()+1);
   }
-  return date.toISOString().split('T')[0];
+
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `${year}年${month}月${day}日`;
 }
 
 // タスク取得・表示
@@ -179,7 +189,7 @@ async function fetchTasks() {
 
     const nextDateDiv = document.createElement('div');
     nextDateDiv.className = 'next-date';
-    nextDateDiv.textContent = '次回: ' + (task.last_done ? formatDateJP(calculateNextDate(task.last_done, task.task_type)) : '未設定');
+    nextDateDiv.textContent = '次回: ' + calculateNextDate(task.last_done, task.task_type);
 
     card.appendChild(title);
     card.appendChild(buttons);
