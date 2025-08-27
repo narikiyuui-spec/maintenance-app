@@ -12,6 +12,7 @@
     display: flex;
     justify-content: center;
     background-color: #f9f9f9;
+    overflow-y: auto;
   }
 
   .container {
@@ -75,6 +76,23 @@
     color: #555;
     font-size: 1.1em;
     text-align: center;
+  }
+
+  .history-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+    z-index: 9999;
+    white-space: pre-line;
+    max-width: 90%;
+    max-height: 80%;
+    overflow-y: auto;
   }
 
   @media (max-width: 400px) {
@@ -185,8 +203,21 @@ async function fetchTasks() {
         .limit(10);
 
       if (histError) { console.error(histError); return; }
-      const formatted = hist.map(h => formatDateJP(h.done_at)).join('\n');
-      alert(formatted || '履歴なし');
+
+      const formatted = hist.map(h => formatDateJP(h.done_at)).join('\n') || '履歴なし';
+
+      const historyDiv = document.createElement('div');
+      historyDiv.className = 'history-modal';
+      historyDiv.textContent = formatted;
+
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '閉じる';
+      closeBtn.style.marginTop = '10px';
+      closeBtn.onclick = () => document.body.removeChild(historyDiv);
+
+      historyDiv.appendChild(document.createElement('br'));
+      historyDiv.appendChild(closeBtn);
+      document.body.appendChild(historyDiv);
     };
 
     buttons.appendChild(useBtn);
@@ -208,9 +239,3 @@ fetchTasks();
 </script>
 </body>
 </html>
-
-
-
-
-
-
