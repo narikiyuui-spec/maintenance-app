@@ -92,7 +92,7 @@
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-// --- ここにご自身の Supabase URL と ANON KEY ---
+// --- Supabase URL と ANON KEY を設定 ---
 const SUPABASE_URL = 'https://cyyavrlclxparfkcwmkg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5eWF2cmxjbHhwYXJma2N3bWtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDg2MDQsImV4cCI6MjA3MTc4NDYwNH0.oUCzHzhUWYPju65rtGJEdgXHIHkac42tREPCXGGx3rU';
 
@@ -158,11 +158,29 @@ async function fetchTasks() {
     const useBtn = document.createElement('button');
     useBtn.textContent = '使用した';
     useBtn.onclick = async () => {
+      // 1) 履歴に追加
       const { error: insertError } = await supabase
         .from('maintenance_history')
         .insert({ task_id: task.id, done_at: new Date() });
 
-      if (!insertError) fetchTasks();
+      if (insertError) {
+        console.error(insertError);
+        return;
+      }
+
+      // 2) last_done を更新
+      const { error: updateError } = await supabase
+        .from('maintenance_tasks')
+        .update({ last_done: new Date() })
+        .eq('id', task.id);
+
+      if (updateError) {
+        console.error(updateError);
+        return;
+      }
+
+      // 再表示
+      fetchTasks();
     }
 
     const historyBtn = document.createElement('button');
