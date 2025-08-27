@@ -92,7 +92,7 @@
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-// --- ここにご自身の Supabase URL と ANON KEY を入れてください ---
+// --- ここにご自身の Supabase URL と ANON KEY ---
 const SUPABASE_URL = 'https://cyyavrlclxparfkcwmkg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5eWF2cmxjbHhwYXJma2N3bWtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDg2MDQsImV4cCI6MjA3MTc4NDYwNH0.oUCzHzhUWYPju65rtGJEdgXHIHkac42tREPCXGGx3rU';
 
@@ -104,79 +104,4 @@ function formatDateJP(dateString) {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
-  return `${year}年${month}月${day}日`;
-}
-
-// 期限を自動計算する関数
-function calculateNextDate(lastDone, task_type) {
-  const date = new Date(lastDone);
-  switch(task_type) {
-    case '2ヶ月': date.setMonth(date.getMonth()+2); break;
-    case '3ヶ月': date.setMonth(date.getMonth()+3); break;
-    case '2週間': date.setDate(date.getDate()+14); break;
-    default: date.setMonth(date.getMonth()+1);
-  }
-  return date.toISOString().split('T')[0];
-}
-
-// タスクを取得して表示
-async function fetchTasks() {
-  const { data, error } = await supabase
-    .from('maintenance_tasks')
-    .select('*')
-    .order('id', {ascending: true});
-
-  if (error) {
-    console.error(error);
-    return;
-  }
-
-  const container = document.getElementById('maintenance-list');
-  container.innerHTML = '';
-
-  data.forEach(task => {
-    const card = document.createElement('div');
-    card.className = 'task-card';
-
-    const title = document.createElement('div');
-    title.className = 'task-title';
-    title.textContent = task.task_name;
-
-    const buttons = document.createElement('div');
-    buttons.className = 'button-group';
-
-    const useBtn = document.createElement('button');
-    useBtn.textContent = '使用した';
-    useBtn.onclick = async () => {
-      const { error: updateError } = await supabase
-        .from('maintenance_tasks')
-        .update({ last_done: new Date() })
-        .eq('id', task.id);
-      if (!updateError) fetchTasks();
-    }
-
-    const historyBtn = document.createElement('button');
-    historyBtn.textContent = '履歴';
-    historyBtn.onclick = () => {
-      alert(`直近の日時: ${task.last_done ? formatDateJP(task.last_done) : 'なし'}`);
-    }
-
-    buttons.appendChild(useBtn);
-    buttons.appendChild(historyBtn);
-
-    const nextDateDiv = document.createElement('div');
-    nextDateDiv.className = 'next-date';
-    nextDateDiv.textContent = '次回: ' + (task.last_done ? formatDateJP(calculateNextDate(task.last_done, task.task_type)) : '未設定');
-
-    card.appendChild(title);
-    card.appendChild(buttons);
-    card.appendChild(nextDateDiv);
-
-    container.appendChild(card);
-  });
-}
-
-fetchTasks();
-</script>
-</body>
-</html>
+  return `${year}年${month
