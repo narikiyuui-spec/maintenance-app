@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>洗濯機・風呂メンテナンス</title>
+<title>洗濯機・風呂・食洗器メンテナンス</title>
 <style>
 body {
   font-family: sans-serif;
@@ -14,21 +14,17 @@ body {
   background-color: #eeeeee;
   overflow-y: auto;
 }
-
 .container {
   width: 100%;
   max-width: 600px;
 }
-
 h1 {
   text-align: center;
   font-size: 1.8em;
   margin-bottom: 24px;
 }
-
 .task-card {
   background-color: #fff;
-  border: 0px solid #ccc;
   border-radius: 5px;
   padding: 20px;
   margin: 16px 0;
@@ -37,7 +33,6 @@ h1 {
   flex-direction: column;
   align-items: center;
 }
-
 .task-title {
   font-weight: bold;
   font-size: 1.5em;
@@ -45,17 +40,13 @@ h1 {
   text-align: center;
   letter-spacing: 0.05em;
 }
-
 .button-group {
   display: flex;
-  flex-direction: row;
   flex-wrap: wrap;
   justify-content: center;
-  align-items: center;
   gap: 12px;
   margin-bottom: 6px;
 }
-
 button {
   padding: 10px 24px;
   border-radius: 999px;
@@ -66,19 +57,16 @@ button {
   cursor: pointer;
   transition: background 0.2s;
 }
-
 button:hover {
   background: #48aba8;
 }
-
 .next-date {
   margin-top: 5px;
   color: #555;
   font-size: 1.1em;
   text-align: center;
 }
-
-/* モーダル背景 */
+/* モーダル */
 .modal-overlay {
   position: fixed;
   top:0; left:0;
@@ -86,7 +74,6 @@ button:hover {
   background-color: rgba(0,0,0,0.5);
   z-index: 9998;
 }
-
 .history-modal {
   position: fixed;
   top: 50%;
@@ -102,7 +89,6 @@ button:hover {
   max-height: 80%;
   overflow-y: auto;
 }
-  
 .history-modal button {
   display: block;
   margin: 10px auto 0;
@@ -115,11 +101,9 @@ button:hover {
   cursor: pointer;
   transition: background 0.2s;
 }
-  
 .history-modal button:hover {
   background-color: #48aba8;
 }
-
 @media (max-width: 400px) {
   .task-title { font-size: 1.3em; }
   button { padding: 12px 20px; font-size: 1em; }
@@ -129,38 +113,60 @@ button:hover {
 </head>
 <body>
 <div class="container">
-  <h1>洗濯機・風呂メンテナンス</h1>
-  <div id="maintenance-list"></div>
+<h1>洗濯機・風呂・食洗器メンテナンス</h1>
+<div id="maintenance-list"></div>
 </div>
 
 <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
-// --- Supabase URL と ANON KEY を設定 ---
 const SUPABASE_URL = 'https://cyyavrlclxparfkcwmkg.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5eWF2cmxjbHhwYXJma2N3bWtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDg2MDQsImV4cCI6MjA3MTc4NDYwNH0.oUCzHzhUWYPju65rtGJEdgXHIHkac42tREPCXGGx3rU';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // ←自分のキーに差し替えてください
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function formatDateJP(dateString) {
   const date = new Date(dateString);
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  return `${year}年${month}月${day}日`;
+  return `${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日`;
 }
 
 function calculateNextDate(latestDone, task_type) {
   let date = latestDone ? new Date(latestDone) : new Date();
 
-  if (task_type.includes('2ヶ月')) date.setMonth(date.getMonth() + 2);
+  if (task_type.includes('1.5ヶ月')) date.setDate(date.getDate() + 45);
+  else if (task_type.includes('2ヶ月')) date.setMonth(date.getMonth() + 2);
   else if (task_type.includes('3ヶ月')) date.setMonth(date.getMonth() + 3);
   else if (task_type.includes('2週間')) date.setDate(date.getDate() + 14);
   else date.setMonth(date.getMonth() + 1);
 
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  return `${year}年${month}月${day}日`;
+  return `${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日`;
+}
+
+// 自動記録（週1回程度）
+async function autoInsert(taskId) {
+  const { data: last, error } = await supabase
+    .from('maintenance_history')
+    .select('done_at')
+    .eq('task_id', taskId)
+    .order('done_at', { ascending: false })
+    .limit(1);
+
+  if (error) { console.error(error); return; }
+
+  const now = new Date();
+  let needInsert = false;
+
+  if (!last || last.length === 0) {
+    needInsert = true;
+  } else {
+    const lastDate = new Date(last[0].done_at);
+    const diffDays = (now - lastDate) / (1000 * 60 * 60 * 24);
+    if (diffDays >= 7) needInsert = true;
+  }
+
+  if (needInsert) {
+    await supabase.from('maintenance_history')
+      .insert({ task_id: taskId, done_at: now });
+  }
 }
 
 async function fetchTasks() {
@@ -175,6 +181,8 @@ async function fetchTasks() {
   container.innerHTML = '';
 
   for (const task of tasks) {
+    await autoInsert(task.id);
+
     const { data: historyData } = await supabase
       .from('maintenance_history')
       .select('done_at')
@@ -217,19 +225,16 @@ async function fetchTasks() {
 
       const formatted = hist.map(h => formatDateJP(h.done_at)).join('\n') || '履歴なし';
 
-      // モーダル背景
       const overlay = document.createElement('div');
       overlay.className = 'modal-overlay';
       overlay.onclick = () => { document.body.removeChild(overlay); document.body.removeChild(modal); };
 
-      // モーダル本体
       const modal = document.createElement('div');
       modal.className = 'history-modal';
       modal.textContent = formatted;
 
       const closeBtn = document.createElement('button');
       closeBtn.textContent = '閉じる';
-      closeBtn.style.marginTop = '10px';
       closeBtn.onclick = () => { document.body.removeChild(overlay); document.body.removeChild(modal); };
 
       modal.appendChild(document.createElement('br'));
@@ -249,35 +254,11 @@ async function fetchTasks() {
     card.appendChild(title);
     card.appendChild(buttons);
     card.appendChild(nextDateDiv);
-
     container.appendChild(card);
   }
 }
 
 fetchTasks();
-
-// --- KeepAlive 自動実行（週1回だけ） ---
-async function keepAlive() {
-  const now = Date.now();
-  const lastPing = localStorage.getItem("lastKeepAlive");
-  const oneWeek = 1000 * 60 * 60 * 24 * 7;
-
-  if (!lastPing || now - parseInt(lastPing) > oneWeek) {
-    const { data, error } = await supabase
-      .from('maintenance_tasks')
-      .select('id')
-      .limit(1);
-    if (!error) {
-      console.log("KeepAlive 成功:", data);
-      localStorage.setItem("lastKeepAlive", now.toString());
-    } else {
-      console.error("KeepAlive エラー:", error);
-    }
-  }
-}
-
-// ページロード時に実行
-keepAlive();
 </script>
 </body>
 </html>
