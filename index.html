@@ -153,6 +153,7 @@ function calculateNextDate(latestDone, task_type) {
   let date = latestDone ? new Date(latestDone) : new Date();
 
   if (task_type.includes('2ヶ月')) date.setMonth(date.getMonth() + 2);
+　else if (task_type.includes('1ヶ月')) date.setMonth(date.getMonth() + 1);
   else if (task_type.includes('3ヶ月')) date.setMonth(date.getMonth() + 3);
   else if (task_type.includes('2週間')) date.setDate(date.getDate() + 14);
   else date.setMonth(date.getMonth() + 1);
@@ -281,3 +282,4 @@ keepAlive();
 </script>
 </body>
 </html>
+
