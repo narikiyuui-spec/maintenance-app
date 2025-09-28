@@ -23,24 +23,7 @@ body {
 h1 {
   text-align: center;
   font-size: 1.8em;
-  margin-bottom: 16px;
-}
-
-#keepAliveBtn {
-  display: block;
-  margin: 0 auto 24px;
-  padding: 10px 24px;
-  border-radius: 999px;
-  border: none;
-  background: #5abebb;
-  color: white;
-  font-size: 1.1em;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-#keepAliveBtn:hover {
-  background: #48aba8;
+  margin-bottom: 24px;
 }
 
 .task-card {
@@ -147,8 +130,6 @@ button:hover {
 <body>
 <div class="container">
   <h1>洗濯機・風呂メンテナンス</h1>
-  <!-- Supabase維持ボタン -->
-  <button id="keepAliveBtn">Supabaseを維持する</button>
   <div id="maintenance-list"></div>
 </div>
 
@@ -275,22 +256,28 @@ async function fetchTasks() {
 
 fetchTasks();
 
-// --- KeepAliveボタン処理 ---
-const keepAliveBtn = document.getElementById('keepAliveBtn');
-keepAliveBtn.onclick = async () => {
-  const { data, error } = await supabase
-    .from('maintenance_tasks')
-    .select('id')
-    .limit(1);
+// --- KeepAlive 自動実行（週1回だけ） ---
+async function keepAlive() {
+  const now = Date.now();
+  const lastPing = localStorage.getItem("lastKeepAlive");
+  const oneWeek = 1000 * 60 * 60 * 24 * 7;
 
-  if (error) {
-    console.error('KeepAlive エラー:', error);
-    alert('エラーが出ました');
-  } else {
-    console.log('KeepAlive 成功:', data);
-    alert('Supabaseを維持しました！');
+  if (!lastPing || now - parseInt(lastPing) > oneWeek) {
+    const { data, error } = await supabase
+      .from('maintenance_tasks')
+      .select('id')
+      .limit(1);
+    if (!error) {
+      console.log("KeepAlive 成功:", data);
+      localStorage.setItem("lastKeepAlive", now.toString());
+    } else {
+      console.error("KeepAlive エラー:", error);
+    }
   }
-};
+}
+
+// ページロード時に実行
+keepAlive();
 </script>
 </body>
 </html>
