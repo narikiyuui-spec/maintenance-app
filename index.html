@@ -121,7 +121,7 @@ button:hover {
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
 
 const SUPABASE_URL = 'https://cyyavrlclxparfkcwmkg.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // ←自分のキーに差し替えてください
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // ←ご自身のキーに差し替えてください
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function formatDateJP(dateString) {
@@ -141,7 +141,7 @@ function calculateNextDate(latestDone, task_type) {
   return `${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日`;
 }
 
-// 自動記録（週1回程度）
+// --- 自動記録（週1回程度） ---
 async function autoInsert(taskId) {
   const { data: last, error } = await supabase
     .from('maintenance_history')
@@ -160,7 +160,9 @@ async function autoInsert(taskId) {
   } else {
     const lastDate = new Date(last[0].done_at);
     const diffDays = (now - lastDate) / (1000 * 60 * 60 * 24);
-    if (diffDays >= 7) needInsert = true;
+    if (diffDays >= 7) {
+      needInsert = true;
+    }
   }
 
   if (needInsert) {
@@ -170,18 +172,29 @@ async function autoInsert(taskId) {
 }
 
 async function fetchTasks() {
-  const { data: tasks, error: tasksError } = await supabase
+  let { data: tasks, error: tasksError } = await supabase
     .from('maintenance_tasks')
     .select('*')
     .order('id', { ascending: true });
 
   if (tasksError) { console.error(tasksError); return; }
 
+  // 食洗器のメンテナンスを追加（DBに未登録なら末尾に仮想追加）
+  if (!tasks.find(t => t.task_name === '食洗器のメンテナンス')) {
+    tasks.push({
+      id: 9999,
+      task_name: '食洗器のメンテナンス',
+      task_type: '1.5ヶ月'
+    });
+  }
+
   const container = document.getElementById('maintenance-list');
   container.innerHTML = '';
 
   for (const task of tasks) {
-    await autoInsert(task.id);
+    if (task.id !== 9999) {
+      await autoInsert(task.id); // DBに記録
+    }
 
     const { data: historyData } = await supabase
       .from('maintenance_history')
