@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>洗濯機・風呂メンテナンス</title>
 <style>
 body {
@@ -102,7 +102,7 @@ button:hover {
   max-height: 80%;
   overflow-y: auto;
 }
-  
+
 .history-modal button {
   display: block;
   margin: 10px auto 0;
@@ -115,7 +115,7 @@ button:hover {
   cursor: pointer;
   transition: background 0.2s;
 }
-  
+
 .history-modal button:hover {
   background-color: #48aba8;
 }
@@ -141,27 +141,36 @@ const SUPABASE_URL = 'https://cyyavrlclxparfkcwmkg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5eWF2cmxjbHhwYXJma2N3bWtnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMDg2MDQsImV4cCI6MjA3MTc4NDYwNH0.oUCzHzhUWYPju65rtGJEdgXHIHkac42tREPCXGGx3rU';
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function formatDateJP(dateString) {
-  const date = new Date(dateString);
+// 日付を日本語表示（DateオブジェクトかISO文字列どちらでも受け取る）
+function formatDateJP(dateLike) {
+  const date = (dateLike instanceof Date) ? dateLike : new Date(dateLike);
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
   return `${year}年${month}月${day}日`;
 }
 
+// calculateNextDate は Date を返す（表示は formatDateJP で行う）
 function calculateNextDate(latestDone, task_type) {
   let date = latestDone ? new Date(latestDone) : new Date();
 
-  if (task_type.includes('2ヶ月')) date.setMonth(date.getMonth() + 2);
-　else if (task_type.includes('1ヶ月')) date.setMonth(date.getMonth() + 1);
-  else if (task_type.includes('3ヶ月')) date.setMonth(date.getMonth() + 3);
-  else if (task_type.includes('2週間')) date.setDate(date.getDate() + 14);
-  else date.setMonth(date.getMonth() + 1);
+  if (task_type && task_type.includes('2週間')) {
+    date.setDate(date.getDate() + 14);
+  } else if (task_type && (task_type.includes('1.5') || task_type.includes('1.5ヶ月'))) {
+    // 1.5ヶ月はおよそ45日で扱う
+    date.setDate(date.getDate() + 45);
+  } else if (task_type && task_type.includes('2ヶ月')) {
+    date.setMonth(date.getMonth() + 2);
+  } else if (task_type && task_type.includes('3ヶ月')) {
+    date.setMonth(date.getMonth() + 3);
+  } else if (task_type && task_type.includes('1ヶ月')) {
+    date.setMonth(date.getMonth() + 1);
+  } else {
+    // デフォルト1ヶ月
+    date.setMonth(date.getMonth() + 1);
+  }
 
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  return `${year}年${month}月${day}日`;
+  return date;
 }
 
 async function fetchTasks() {
@@ -176,6 +185,7 @@ async function fetchTasks() {
   container.innerHTML = '';
 
   for (const task of tasks) {
+    // 最新履歴取得
     const { data: historyData } = await supabase
       .from('maintenance_history')
       .select('done_at')
@@ -202,7 +212,8 @@ async function fetchTasks() {
         .from('maintenance_history')
         .insert({ task_id: task.id, done_at: new Date() });
       if (insertError) { console.error(insertError); return; }
-      nextDateDiv.textContent = '次回: ' + calculateNextDate(new Date().toISOString(), task.task_type);
+      // 挿入後は表示更新のためページ再読み込み的に fetchTasks を再実行
+      await fetchTasks();
     };
 
     const historyBtn = document.createElement('button');
@@ -221,7 +232,10 @@ async function fetchTasks() {
       // モーダル背景
       const overlay = document.createElement('div');
       overlay.className = 'modal-overlay';
-      overlay.onclick = () => { document.body.removeChild(overlay); document.body.removeChild(modal); };
+      overlay.onclick = () => { 
+        if (overlay.parentNode) document.body.removeChild(overlay); 
+        if (modal.parentNode) document.body.removeChild(modal);
+      };
 
       // モーダル本体
       const modal = document.createElement('div');
@@ -231,7 +245,10 @@ async function fetchTasks() {
       const closeBtn = document.createElement('button');
       closeBtn.textContent = '閉じる';
       closeBtn.style.marginTop = '10px';
-      closeBtn.onclick = () => { document.body.removeChild(overlay); document.body.removeChild(modal); };
+      closeBtn.onclick = () => { 
+        if (overlay.parentNode) document.body.removeChild(overlay); 
+        if (modal.parentNode) document.body.removeChild(modal);
+      };
 
       modal.appendChild(document.createElement('br'));
       modal.appendChild(closeBtn);
@@ -243,9 +260,26 @@ async function fetchTasks() {
     buttons.appendChild(useBtn);
     buttons.appendChild(historyBtn);
 
+    // 次回日の算出（Dateオブジェクト）
+    const nextDateObj = calculateNextDate(latestDone, task.task_type);
+
     const nextDateDiv = document.createElement('div');
     nextDateDiv.className = 'next-date';
-    nextDateDiv.textContent = '次回: ' + calculateNextDate(latestDone, task.task_type);
+    nextDateDiv.textContent = '次回: ' + formatDateJP(nextDateObj);
+
+    // 色分け：期限切れ->赤、1週間以内->青、それ以外はデフォルトグレー
+    const now = new Date();
+    // 差は日数（次回 - 今日）
+    const diffMs = nextDateObj.setHours(0,0,0,0) - (new Date(now.getFullYear(), now.getMonth(), now.getDate())).getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      nextDateDiv.style.color = 'red';
+    } else if (diffDays <= 7) {
+      nextDateDiv.style.color = 'blue';
+    } else {
+      nextDateDiv.style.color = '#555';
+    }
 
     card.appendChild(title);
     card.appendChild(buttons);
@@ -282,4 +316,3 @@ keepAlive();
 </script>
 </body>
 </html>
-
